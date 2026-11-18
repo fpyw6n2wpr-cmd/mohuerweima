@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace = "com.mohuerweima.uvc"
-    compileSdk = 34 // 改用最稳定的34
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.mohuerweima.uvc"
-        minSdk = 24 // 改成24，这样主人的安卓15手机绝对能装，别的手机也能装喵
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -32,5 +32,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
-    implementation("com.herohan:UVCAndroid:1.0.11")
+    implementation("com.github.herohan:UVCAndroid:1.0.12")
 }
