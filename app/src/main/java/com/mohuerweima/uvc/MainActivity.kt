@@ -1,7 +1,8 @@
 package com.mohuerweima.uvc
 
-import android.hardware.usb.UsbDevice
+import android.content.Context
 import android.os.Bundle
+import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.herohan.uvcapp.CameraHelper
@@ -10,21 +11,22 @@ import com.serenegiant.widget.UVCCameraTextureView
 class MainActivity : AppCompatActivity() {
     private lateinit var mCameraView: UVCCameraTextureView
     private var mCameraHelper: CameraHelper? = null
-    private var debugText: TextView? = null
+    private lateinit var debugText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // 动态创建一个文字层，用来显示错误信息喵！
-        val layout = android.widget.FrameLayout(this)
+        // 用代码画一个界面，包含一个黑底画面和红色日志文字
+        val layout = FrameLayout(this)
         layout.setBackgroundColor(android.graphics.Color.BLACK)
         
         mCameraView = UVCCameraTextureView(this)
-        layout.addView(mCameraView, android.widget.FrameLayout.LayoutParams(-1, -1))
+        layout.addView(mCameraView, FrameLayout.LayoutParams(-1, -1))
         
         debugText = TextView(this)
-        debugText?.setTextColor(android.graphics.Color.RED)
-        debugText?.text = "初始化中...\n请确保相机已开启实时取景\n插拔一下采集卡试试喵"
+        debugText.setTextColor(android.graphics.Color.RED)
+        debugText.textSize = 14f
+        debugText.text = "初始化中...\n请确保相机已开启实时取景喵\n"
         layout.addView(debugText)
         
         setContentView(layout)
@@ -32,51 +34,45 @@ class MainActivity : AppCompatActivity() {
         mCameraHelper = CameraHelper()
         
         try {
-            // 绑定USB监听
-            mCameraHelper?.setUSBMonitor(this, object : com.herohan.uvcapp.CameraHelper.OnDeviceConnectListener {
-                override fun onAttach(device: UsbDevice) {
-                    runOnUiThread { debugText?.text = "检测到采集卡: ${device.deviceName}" }
-                    // 发现设备后直接打开
-                    mCameraHelper?.openCamera(device)
-                }
-
-                override fun onDetach(device: UsbDevice) {
-                    runOnUiThread { debugText?.text = "采集卡已拔出" }
-                }
-
-                override fun onCancel(device: UsbDevice) {
-                    runOnUiThread { debugText?.text = "采集卡连接取消" }
-                }
-
-                override fun onConnect(device: UsbDevice) {
-                    runOnUiThread { debugText?.text = "已授权，准备获取画面..." }
-                }
-
-                override fun onDisconnect(device: UsbDevice) {
-                    runOnUiThread { debugText?.text = "连接断开" }
-                }
-            })
+            // 1. 尝试用反射初始化
+            val initMethod = CameraHelper::class.java.getMethod("init", Context::class.java)
+            initMethod.invoke(mCameraHelper, this)
+            debugText.append("【成功】init 初始化完毕喵\n")
             
-            // 告诉相机助手把画面渲染到我们的 View 上
-            mCameraHelper?.setSurface(mCameraView.surfaceTexture)
-            
+            // 2. 尝试用反射绑定画面
+            val setSurfaceMethod = CameraHelper::class.java.getMethod("setSurface", android.graphics.SurfaceTexture::class.java)
+            setSurfaceMethod.invoke(mCameraHelper, mCameraView.surfaceTexture)
+            debugText.append("【成功】画面绑定完毕喵\n")
         } catch (e: Exception) {
-            debugText?.text = "代码报错啦喵：\n${e.message}"
+            debugText.append("【报错】初始化失败：${e.message}\n")
         }
     }
 
     override fun onStart() {
         super.onStart()
+        try {
+            // 尝试用反射打开相机
+            val openMethod = CameraHelper::class.java.getMethod("openCamera")
+            openMethod.invoke(mCameraHelper)
+            debugText.append("【成功】相机打开指令已发送喵\n等待USB授权...\n")
+        } catch (e: Exception) {
+            debugText.append("【报错】打开相机失败：${e.message}\n")
+        }
     }
 
     override fun onStop() {
-        mCameraHelper?.closeCamera()
         super.onStop()
+        try {
+            val closeMethod = CameraHelper::class.java.getMethod("closeCamera")
+            closeMethod.invoke(mCameraHelper)
+        } catch (e: Exception) { }
     }
 
     override fun onDestroy() {
-        mCameraHelper?.release()
-        mCameraHelper = null
         super.onDestroy()
+        try {
+            val releaseMethod = CameraHelper::class.java.getMethod("release")
+            releaseMethod.invoke(mCameraHelper)
+        } catch (e: Exception) { }
     }
 }
