@@ -6,30 +6,33 @@ import com.herohan.uvcapp.CameraHelper
 import com.herohan.uvcapp.UVCCameraTextureView
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var cameraView: UVCCameraTextureView
-    private lateinit var cameraHelper: CameraHelper
+    private lateinit var mCameraView: UVCCameraTextureView
+    private var mCameraHelper: CameraHelper? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        cameraView = findViewById(R.id.camera_view)
-        cameraHelper = CameraHelper()
-        cameraHelper.init(this)
-        cameraHelper.setUSBMonitor(this, cameraView)
+
+        mCameraView = findViewById(R.id.camera_view)
+        
+        mCameraHelper = CameraHelper()
+        mCameraHelper?.init(this)
+        mCameraHelper?.setSurface(mCameraView.surfaceTexture)
     }
 
     override fun onStart() {
         super.onStart()
-        cameraHelper.openCamera()
+        mCameraHelper?.openCamera()
     }
 
     override fun onStop() {
-        cameraHelper.closeCamera()
+        mCameraHelper?.closeCamera()
         super.onStop()
     }
 
     override fun onDestroy() {
-        cameraHelper.release()
+        mCameraHelper?.release()
+        mCameraHelper = null
         super.onDestroy()
     }
 }
