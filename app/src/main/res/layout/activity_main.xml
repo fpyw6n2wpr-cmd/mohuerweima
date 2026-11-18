@@ -3,11 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
-    
-    <!-- 注意这里的包名，是 serenegiant 喵！ -->
-    <com.serenegiant.widget.UVCCameraTextureView
+
+    <!-- 采集卡画面显示区域喵 -->
+    <com.jiangdg.ausbc.widget.AspectRatioTextureView
         android:id="@+id/camera_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-        
+
+    <!-- 调试用红字显示器喵 -->
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:textColor="#FF0000"
+        android:textSize="16sp"
+        android:text="初始化中...\n等待插拔采集卡喵" />
 </FrameLayout>
