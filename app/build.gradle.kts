@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("com.android.application") version "8.4.0"
+    id("org.jetbrains.kotlin.android") version "1.9.23"
 }
 
 android {
@@ -27,7 +27,7 @@ android {
         jvmTarget = "17"
     }
     
-    // 就是这一段！完美解决刚才那个 .so 报错喵！
+    // 完美解决 .so 剥离报错的咒语喵！
     packaging {
         jniLibs {
             useLegacyPackaging = true
