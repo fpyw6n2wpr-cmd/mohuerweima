@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # 换成稳定版，避开最新版的bug
 
     steps:
     - name: Checkout code
@@ -27,7 +27,7 @@ jobs:
       with:
         gradle-version: 8.7
 
-    - name: Build Debug APK
+    - name: Build with Gradle
       run: gradle assembleDebug
 
     - name: Upload APK
