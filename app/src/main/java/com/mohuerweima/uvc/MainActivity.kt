@@ -1,38 +1,36 @@
-package com.mohuerweima.uvc
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
 
-import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.herohan.uvcapp.CameraHelper
-import com.herohan.uvcapp.UVCCameraTextureView
+android {
+    namespace = "com.mohuerweima.uvc"
+    compileSdk = 34
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var mCameraView: UVCCameraTextureView
-    private var mCameraHelper: CameraHelper? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        mCameraView = findViewById(R.id.camera_view)
-        
-        mCameraHelper = CameraHelper()
-        mCameraHelper?.init(this)
-        mCameraHelper?.setSurface(mCameraView.surfaceTexture)
+    defaultConfig {
+        applicationId = "com.mohuerweima.uvc"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
     }
-
-    override fun onStart() {
-        super.onStart()
-        mCameraHelper?.openCamera()
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
     }
-
-    override fun onStop() {
-        mCameraHelper?.closeCamera()
-        super.onStop()
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-
-    override fun onDestroy() {
-        mCameraHelper?.release()
-        mCameraHelper = null
-        super.onDestroy()
+    kotlinOptions {
+        jvmTarget = "17"
     }
+}
+
+dependencies {
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("com.github.herohan:UVCAndroid:1.0.12")
 }
