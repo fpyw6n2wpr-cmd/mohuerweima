@@ -3,11 +3,12 @@ package com.mohuerweima.uvc
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.herohan.uvcapp.CameraHelper
-import com.herohan.uvcapp.UVCCameraTextureView
+// 注意这里！包名变了喵！
+import com.serenegiant.widget.UVCCameraTextureView
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mCameraView: UVCCameraTextureView
-    private lateinit var mCameraHelper: CameraHelper
+    private var mCameraHelper: CameraHelper? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,22 +17,25 @@ class MainActivity : AppCompatActivity() {
         mCameraView = findViewById(R.id.camera_view)
         
         mCameraHelper = CameraHelper()
-        mCameraHelper.init(this)
-        mCameraHelper.setSurface(mCameraView.surfaceTexture)
+        // 这里不带参数喵！
+        mCameraHelper?.init(this)
     }
 
     override fun onStart() {
         super.onStart()
-        mCameraHelper.openCamera()
+        mCameraHelper?.openCamera()
+        mCameraHelper?.addSurface(mCameraView.surfaceTexture, false)
     }
 
     override fun onStop() {
-        mCameraHelper.closeCamera()
+        mCameraHelper?.removeSurface(mCameraView.surfaceTexture)
+        mCameraHelper?.closeCamera()
         super.onStop()
     }
 
     override fun onDestroy() {
-        mCameraHelper.release()
+        mCameraHelper?.release()
+        mCameraHelper = null
         super.onDestroy()
     }
 }
