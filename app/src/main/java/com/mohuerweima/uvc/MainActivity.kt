@@ -1,7 +1,8 @@
 package com.mohuerweima.uvc
 
-import android.content.Context
+import android.hardware.usb.UsbDevice
 import android.os.Bundle
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.herohan.uvcapp.CameraHelper
 import com.serenegiant.widget.UVCCameraTextureView
@@ -9,49 +10,73 @@ import com.serenegiant.widget.UVCCameraTextureView
 class MainActivity : AppCompatActivity() {
     private lateinit var mCameraView: UVCCameraTextureView
     private var mCameraHelper: CameraHelper? = null
+    private var debugText: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
         
-        mCameraView = findViewById(R.id.camera_view)
+        // 动态创建一个文字层，用来显示错误信息喵！
+        val layout = android.widget.FrameLayout(this)
+        layout.setBackgroundColor(android.graphics.Color.BLACK)
+        
+        mCameraView = UVCCameraTextureView(this)
+        layout.addView(mCameraView, android.widget.FrameLayout.LayoutParams(-1, -1))
+        
+        debugText = TextView(this)
+        debugText?.setTextColor(android.graphics.Color.RED)
+        debugText?.text = "初始化中...\n请确保相机已开启实时取景\n插拔一下采集卡试试喵"
+        layout.addView(debugText)
+        
+        setContentView(layout)
+
         mCameraHelper = CameraHelper()
         
-        // 使用反射，不管它方法叫啥，只要存在就能抓住它！
         try {
-            // 尝试初始化
-            val initMethod = CameraHelper::class.java.getMethod("init", Context::class.java)
-            initMethod.invoke(mCameraHelper, this)
+            // 绑定USB监听
+            mCameraHelper?.setUSBMonitor(this, object : com.herohan.uvcapp.CameraHelper.OnDeviceConnectListener {
+                override fun onAttach(device: UsbDevice) {
+                    runOnUiThread { debugText?.text = "检测到采集卡: ${device.deviceName}" }
+                    // 发现设备后直接打开
+                    mCameraHelper?.openCamera(device)
+                }
+
+                override fun onDetach(device: UsbDevice) {
+                    runOnUiThread { debugText?.text = "采集卡已拔出" }
+                }
+
+                override fun onCancel(device: UsbDevice) {
+                    runOnUiThread { debugText?.text = "采集卡连接取消" }
+                }
+
+                override fun onConnect(device: UsbDevice) {
+                    runOnUiThread { debugText?.text = "已授权，准备获取画面..." }
+                }
+
+                override fun onDisconnect(device: UsbDevice) {
+                    runOnUiThread { debugText?.text = "连接断开" }
+                }
+            })
             
-            // 尝试绑定画面
-            val setSurfaceMethod = CameraHelper::class.java.getMethod("setSurface", android.graphics.SurfaceTexture::class.java)
-            setSurfaceMethod.invoke(mCameraHelper, mCameraView.surfaceTexture)
+            // 告诉相机助手把画面渲染到我们的 View 上
+            mCameraHelper?.setSurface(mCameraView.surfaceTexture)
+            
         } catch (e: Exception) {
-            // 就算没抓住也不报错，保证打包成功！
+            debugText?.text = "代码报错啦喵：\n${e.message}"
         }
     }
 
     override fun onStart() {
         super.onStart()
-        try {
-            val openMethod = CameraHelper::class.java.getMethod("openCamera")
-            openMethod.invoke(mCameraHelper)
-        } catch (e: Exception) { }
     }
 
     override fun onStop() {
+        mCameraHelper?.closeCamera()
         super.onStop()
-        try {
-            val closeMethod = CameraHelper::class.java.getMethod("closeCamera")
-            closeMethod.invoke(mCameraHelper)
-        } catch (e: Exception) { }
     }
 
     override fun onDestroy() {
+        mCameraHelper?.release()
+        mCameraHelper = null
         super.onDestroy()
-        try {
-            val releaseMethod = CameraHelper::class.java.getMethod("release")
-            releaseMethod.invoke(mCameraHelper)
-        } catch (e: Exception) { }
     }
 }
