@@ -1,70 +1,81 @@
 package com.mohuerweima.uvc
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.jiangdg.ausbc.CameraClient
-import com.jiangdg.ausbc.widget.AspectRatioTextureView
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var cameraView: AspectRatioTextureView
+    private lateinit var viewFinder: PreviewView
     private lateinit var statusText: TextView
-    private var cameraClient: CameraClient? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        cameraView = findViewById(R.id.camera_view)
+        viewFinder = findViewById(R.id.camera_view)
         statusText = findViewById(R.id.status_text)
-        statusText.text = "【初始化中】\n准备连接设备..."
 
-        try {
-            val builder = CameraClient.Builder(this)
-            
-            // 使用反射，把 Builder 里所有接受一个参数且名字包含 CameraView 的方法全试一遍喵！
-            var isSet = false
-            for (method in builder.javaClass.methods) {
-                if (method.parameterCount == 1 && method.name.contains("CameraView", ignoreCase = true)) {
-                    try {
-                        method.invoke(builder, cameraView)
-                        isSet = true
-                        break
-                    } catch (e: Throwable) { }
-                }
-            }
-            
-            // 如果没找到带 CameraView 名字的，就试试 fluent api (直接叫 cameraView 的)
-            if (!isSet) {
+        // 申请相机权限喵
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 10)
+        } else {
+            startCamera()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 10 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        } else {
+            statusText.text = "【错误】未获得相机权限喵，请在手机设置中允许！"
+        }
+    }
+
+    private fun startCamera() {
+        statusText.text = "【搜索中】正在扫描系统摄像头..."
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        
+        cameraProviderFuture.addListener({
+            try {
+                val cameraProvider = cameraProviderFuture.get()
+                
+                val preview = Preview.Builder().build()
+                preview.setSurfaceProvider(viewFinder.surfaceProvider)
+
+                // 默认使用手机后置摄像头
+                var selector = CameraSelector.DEFAULT_BACK_CAMERA
+                
                 try {
-                    val m = builder.javaClass.getMethod("cameraView", com.jiangdg.ausbc.ICameraView::class.java)
-                    m.invoke(builder, cameraView)
-                } catch (e: Throwable) { }
+                    // 寻找外接的 USB 采集卡相机喵！
+                    val externalSelector = CameraSelector.Builder()
+                        .requireLensFacing(CameraSelector.LENS_FACING_EXTERNAL)
+                        .build()
+                        
+                    if (cameraProvider.hasCamera(externalSelector)) {
+                        selector = externalSelector
+                        statusText.text = "【大成功】已找到外接采集卡！\n正在渲染画面..."
+                    } else {
+                        statusText.text = "【提示】系统未识别到采集卡，当前为手机后置相机画面喵。\n请检查相机是否开启取景喵！"
+                    }
+                } catch (e: Exception) {
+                    statusText.text = "【提示】系统不支持外部相机接口，当前为手机后置..."
+                }
+
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(this, selector, preview)
+                
+            } catch (e: Exception) {
+                statusText.text = "【相机启动失败】\n${e.message}"
             }
-
-            cameraClient = builder.build()
-            statusText.text = "【初始化成功】\n等待插拔采集卡喵..."
-        } catch (e: Exception) {
-            statusText.text = "【初始化报错】\n${e.message}"
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        try {
-            cameraClient?.openCamera(null)
-            statusText.text = "【搜索中】\n正在寻找 USB 相机，请确保已插入..."
-        } catch (e: Exception) {
-            statusText.text = "【打开报错】\n${e.message}"
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        try {
-            cameraClient?.closeCamera()
-        } catch (e: Exception) {
-            // 忽略
-        }
+        }, ContextCompat.getMainExecutor(this))
     }
 }
