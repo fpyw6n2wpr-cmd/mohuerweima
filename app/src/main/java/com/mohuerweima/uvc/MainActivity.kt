@@ -3,7 +3,6 @@ package com.mohuerweima.uvc
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.herohan.uvcapp.CameraHelper
-// 注意这里！包名变了喵！
 import com.serenegiant.widget.UVCCameraTextureView
 
 class MainActivity : AppCompatActivity() {
@@ -17,18 +16,16 @@ class MainActivity : AppCompatActivity() {
         mCameraView = findViewById(R.id.camera_view)
         
         mCameraHelper = CameraHelper()
-        // 这里不带参数喵！
-        mCameraHelper?.init(this)
+        // 只要这一句！不需要 init，直接连接 USB 监听喵！
+        mCameraHelper?.setUSBMonitor(this, mCameraView)
     }
 
     override fun onStart() {
         super.onStart()
         mCameraHelper?.openCamera()
-        mCameraHelper?.addSurface(mCameraView.surfaceTexture, false)
     }
 
     override fun onStop() {
-        mCameraHelper?.removeSurface(mCameraView.surfaceTexture)
         mCameraHelper?.closeCamera()
         super.onStop()
     }
