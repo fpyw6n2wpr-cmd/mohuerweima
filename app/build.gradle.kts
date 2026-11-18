@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.mohuerweima.uvc"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.mohuerweima.uvc"
-        minSdk = 35
-        targetSdk = 35
+        minSdk = 35  // 主人要求的最低安卓15
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
     }
