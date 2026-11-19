@@ -32,9 +32,9 @@ class MainActivity : AppCompatActivity() {
                 
                 if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     statusText.text = "【授权成功】\n正在启动采集卡画面..."
-                    // 权限拿到了，立刻开相机！
+                    // 修复点1：传 null 让它自动用默认画面比例开相机！
                     try {
-                        cameraClient?.openCamera(device)
+                        cameraClient?.openCamera(null)
                     } catch (e: Exception) {
                         statusText.text = "【打开报错】\n${e.message}"
                     }
@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.status_text)
         statusText.text = "【初始化中】\n正在准备底层环境..."
 
-        // 注册授权广播
+        // 注册授权广播（适配安卓17）
         val filter = IntentFilter(ACTION_USB_PERMISSION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -98,11 +98,12 @@ class MainActivity : AppCompatActivity() {
             if (device.deviceClass == 239 || device.deviceClass == 14) { 
                 if (usbManager.hasPermission(device)) {
                     statusText.text = "【已授权】\n正在启动画面..."
-                    cameraClient?.openCamera(device)
+                    // 修复点2：这里也改成 null！
+                    cameraClient?.openCamera(null)
                 } else {
                     statusText.text = "【请求授权】\n请在手机弹窗中点击“允许”喵！"
                     
-                    // 强制弹窗请求权限（适配安卓 12+ 的 PendingIntent 规则）
+                    // 强制弹窗请求权限（适配安卓 12+）
                     val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         PendingIntent.FLAG_MUTABLE
                     } else {
@@ -121,7 +122,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(usbPermissionReceiver)
+        try {
+            unregisterReceiver(usbPermissionReceiver)
+        } catch (e: Exception) { }
         cameraClient?.closeCamera()
     }
 
