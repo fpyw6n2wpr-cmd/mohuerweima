@@ -24,17 +24,11 @@ class MainActivity : AppCompatActivity() {
     private val usbPermissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == ACTION_USB_PERMISSION) {
-                val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-                } else {
-                    intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
-                }
-                
                 if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     statusText.text = "【授权成功】\n正在启动采集卡画面..."
                     try {
-                        // 尝试安全打开相机
-                        cameraClient?.openCamera(device)
+                        // 这个库 openCamera 只接受 IAspectRatio，传 null 让它默认
+                        cameraClient?.openCamera(null) 
                     } catch (e: Throwable) {
                         statusText.text = "【画面启动失败】\n底层不兼容：${e.message}"
                     }
@@ -53,7 +47,6 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.status_text)
         statusText.text = "【初始化中】\n正在准备底层环境..."
 
-        // 注册授权广播
         val filter = IntentFilter(ACTION_USB_PERMISSION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -62,9 +55,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            // 创建 CameraClient
             val builder = CameraClient.Builder(this)
-            // 利用反射强行绑定画面
             for (method in builder.javaClass.methods) {
                 if (method.name.lowercase().contains("view") && method.parameterCount == 1) {
                     try {
@@ -77,7 +68,6 @@ class MainActivity : AppCompatActivity() {
             }
             cameraClient = builder.build()
             
-            // 开始主动寻找 USB 设备并请求权限！
             usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
             requestUsbPermission()
             
@@ -98,8 +88,8 @@ class MainActivity : AppCompatActivity() {
                 if (usbManager.hasPermission(device)) {
                     statusText.text = "【已授权】\n正在启动画面..."
                     try {
-                        // 直接传 device，库内部会自动处理比例
-                        cameraClient?.openCamera(device)
+                        // 依然传 null，绝不再报类型不匹配！
+                        cameraClient?.openCamera(null) 
                     } catch (e: Throwable) {
                         statusText.text = "【画面启动失败】\n底层崩溃：${e.message}"
                     }
